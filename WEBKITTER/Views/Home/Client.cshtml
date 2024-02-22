@@ -1,0 +1,329 @@
+﻿
+@Html.AntiForgeryToken()
+
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Clients List</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <div id="dataTable_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                    <div class="row">
+                        <div class="col-sm-12 col-md-6">
+                            <div id="dataTable_filter" class="dataTables_filter">
+                                <label>
+                                    Search:
+                                    <input type="search" class="form-control form-control-sm" placeholder="" aria-controls="dataTable">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12">
+                        </div>
+                    </div>
+                    <div class="row" id="client-list">
+                        
+                       
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="userModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Client Details</h4>
+                <button type="button" data-dismiss="modal" onclick="closeForm()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="userId">
+                    <div class="form-group">
+                        <label for="name">Client Name:</label>
+                        <input type="text" class="form-control" id="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name:</label>
+                        <input type="text" class="form-control" id="lastName">
+                    </div>
+                   
+                    <div class="form-group">
+                        <label for="address">Address:</label>
+                        <input type="text" class="form-control" id="address">
+                    </div>
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone number:</label>
+                        <input type="text" class="form-control" id="phoneNumber">
+                    </div>
+              
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" onclick="saveUser()">Save</button>
+                        <button type="button" onclick="closeForm()" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@*     <div id="menu-list"></div>
+    <div id="order-list"></div> *@
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+     function openForm()
+    {
+        const modal = document.getElementById("userModal");
+        modal.style.display = "block";
+    }
+
+    function closeForm()
+    {
+        const modal = document.getElementById("userModal");
+        modal.style.display = "none";
+    }
+
+     var editingUserId = 0;
+
+
+   function saveUser() {
+    var name = $('#name').val();
+    var lastName = $('#lastName').val();
+    var address = $('#address').val();
+    var phoneNumber = $('#phoneNumber').val();
+
+    // Добавление нового пользователя
+    if (editingUserId == 0) {
+        $.ajax({
+            url: 'Clients/Add',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                Id: '0',
+                Name: name,
+                LastName: lastName,  // Corrected variable name
+                Email: "",
+                Address: address,
+                PhoneNumber: phoneNumber
+            }),
+            success: function (data) {
+                closeForm();
+                clearModal();
+                loadClientList();  // Corrected function name
+            },
+            error: function (error) {
+                alert("Error: " + error.responseText);
+                console.log(error);
+            }
+        });
+    } else {
+        // Редактирование пользователя
+        $.ajax({
+            url: '/Clients/Update/' + editingUserId,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                Id: editingUserId,
+                Name: name,
+                LastName: lastName,  // Corrected variable name
+                Email: "",
+                Address: address,
+                PhoneNumber: phoneNumber
+            }),
+            success: function (data) {
+                closeForm();
+                clearModal();
+                loadClientList();  // Corrected function name
+            },
+            error: function (error) {
+                alert("Error: " + error.responseText);
+                console.log(error);
+            }
+        });
+    }
+}
+
+
+
+    function clearModal() {
+        editingUserId = 0;
+        $('#userId').val('');
+        $('#name').val('');
+        $('#lastName').val('');
+        $('#address').val('');
+        $('#phoneNumber').val('');
+    }
+
+    function editUser(userId, name, lastName,  email, address,phoneNumber) {
+        const modal = document.getElementById("userModal");
+        modal.style.display = "block";
+        editingUserId = userId;
+        $('#userId').val(userId);
+        $('#name').val(name);
+        $('#lastName').val(lastName);
+        $('#address').val(address);
+        $('#phoneNumber').val(phoneNumber);
+    }
+
+
+    function deleteUser(userId) {
+        $.ajax({
+            url: '/Clients/Delete/' + userId,
+            type: 'DELETE',            
+            success: function (data) {            
+                loadClientList();
+            },
+            error: function (error) {
+                alert("Error: " + error.responseText);
+                console.log(error);
+            }
+        });
+    }
+
+
+    function loadClientList() {
+        $.ajax({
+            url: "/Clients/GetClients",
+            method: "GET",
+            success: function (clients) {
+                   console.log(clients);  // Log the received data to the console
+                    displayClientList(clients);
+
+            },
+            error: function (error) {
+                console.error("Error loading client list: " + error.responseText);
+            }
+        });
+    }
+
+    function displayClientList(clients) {
+        var clientTable =
+ 
+         $("<table class='table table-bordered dataTable' id='dataTable' width='100%' cellspacing='0' role='grid' aria-describedby='dataTable_info' style='width: 100%;'>").append(
+            $("<thead>").append(
+                $("<tr role='row'>").append(
+                    $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("First Name"),
+                    $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("Last Name"),
+                    $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("Address"),
+                    $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("PhoneNumber"),
+                    $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>")
+                        .append("<button data-toggle='modal' onclick='openForm()' data-target='#userModal'>Add User</button>")
+
+                )
+            )
+        ,
+        $("<tbody>").append(
+            clients.map(function (client) {
+               return $("<tr>").append(
+                $("<td>").text(client.name),
+                $("<td>").text(client.lastName),
+                $("<td>").text(client.address),
+                $("<td>").text(client.phoneNumber),
+                $("<td>").html(
+                    "<button onclick='editUser(\"" + client.id + "\", \"" + client.name + "\", \"" + client.lastName + "\", \"" + client.email + "\", \"" + client.address + "\", \"" + client.phoneNumber + "\")'>Edit</button>"
+                ),
+                $("<td>").html("<button onclick='deleteUser(\"" + client.id + "\")'>Delete</button>")
+                       
+            );
+        })
+      )
+        
+);
+
+   
+
+       
+    $("#client-list").empty().append(clientTable);
+}
+
+    $(document).ready(function () {
+        loadClientList();
+       
+    });
+</script>
+
+@* 
+    // function loadMenuList() {
+    //     $.ajax({
+    //         url: "/Menus/GetMenus",
+    //         method: "GET",
+    //         success: function (menus) {
+    //             displayMenuList(menus);
+
+    //         },
+    //         error: function (error) {
+    //             console.error("Error loading client list: " + error.responseText);
+    //         }
+    //     });
+    // }
+    // function displayMenuList(menus) {
+    //     var menuTable = $("<table class='table table-striped table-bordered table-hover table-responsive'>").append(
+    //         $("<thead>").append(
+    //             $("<tr>").append(
+    //                 $("<th>").text("Номер"),
+    //                 $("<th>").text("Имя"),
+    //                 $("<th>").text("Описание"),
+
+    //             )
+    //         ),
+    //         $("<tbody>").append(
+    //             menus.map(function (menu) {
+    //                 return $("<tr>").append(
+    //                     $("<td>").text(menu.id),
+    //                     $("<td>").text(menu.name),
+    //                     $("<td>").text(menu.description),
+
+    //                 );
+    //             })
+    //         )
+    //     );
+
+    //     $("#menu-list").empty().append(menuTable);
+    // }
+ *@
+    function loadOrderList() {
+         $.ajax({
+             url: "/Orders/GetOrders",
+             method: "GET",
+             success: function (orders) {
+                 displayOrderList(orders);
+
+             },
+             error: function (error) {
+                 console.error("Error loading client list: " + error.responseText);
+             }
+         });
+     }
+     function displayOrderList(orders) {
+         var orderTable = $("<table class='table table-striped table-bordered table-hover table-responsive'>").append(
+             $("<thead>").append(
+                 $("<tr>").append(
+                     $("<th>").text("Order Date"),
+                     $("<th>").text("OrderStatus"),
+                     $("<th>").text("Customer ID"),
+                     $("<th>").text("Dish ID"),
+
+                 )
+             ),
+             $("<tbody>").append(
+                 orders.map(function (order) {
+                     return $("<tr>").append(
+                         $("<td>").text(order.orderID),
+                         $("<td>").text(order.orderDate),
+                         $("<td>").text(order.orderStatus),
+                         $("<td>").text(order.customerID),
+                         $("<td>").text(order.dishId)
+
+                     );
+                 })
+             )
+         );
+
+         $("#order-list").empty().append(orderTable);
+     }
+

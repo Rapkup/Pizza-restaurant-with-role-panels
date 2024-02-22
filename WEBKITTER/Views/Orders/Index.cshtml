@@ -1,0 +1,231 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutPanel.cshtml";
+}
+
+
+@Html.AntiForgeryToken()
+
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Dishes List</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <div id="dataTable_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                <div class="row">
+                    <div class="col-sm-12 col-md-6">
+                        <div id="dataTable_filter" class="dataTables_filter">
+                            <label>
+                                Search:
+                                <input type="search" class="form-control form-control-sm" placeholder="" aria-controls="dataTable">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                    </div>
+                </div>
+                <div class="row" id="order-list">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="orderModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Dishes Details</h4>
+                <button type="button" data-dismiss="modal" onclick="closeOrderForm()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="orderId">
+                <div class="form-group">
+                    <label for="orderDate">Order Date:</label>
+                    <input type="datetime-local" class="form-control" id="orderDate">
+                </div>
+                <div class="form-group">
+                    <label for="orderStatus">Order Status:</label>
+                    <input type="text" class="form-control" id="orderStatus">
+                </div>
+                <div class="form-group">
+                    <label for="customerId">Customer ID:</label>
+                    <input type="text" class="form-control" id="customerId">
+                </div>
+                <div class="form-group">
+                    <label for="dishId">Dish ID:</label>
+                    <input type="text" class="form-control" id="dishId">
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" onclick="saveOrder()">Save</button>
+                    <button type="button" onclick="closeOrderForm()" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function openOrderForm() {
+        const modal = document.getElementById("orderModal");
+        modal.style.display = "block";
+    }
+
+    function closeOrderForm() {
+        const modal = document.getElementById("orderModal");
+        modal.style.display = "none";
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+
+    }
+
+    var editingOrderId = 0;
+
+    function saveOrder() {
+        var orderDate = $('#orderDate').val();
+        var orderStatus = $('#orderStatus').val();
+        var customerId = parseInt($('#customerId').val(), 10); // Parse as integer
+        var dishId = parseInt($('#dishId').val(), 10); // Parse as integer
+
+        // Add new order
+        if (editingOrderId == 0) {
+            $.ajax({
+                url: '/Orders/Add',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    OrderID: '0',
+                    OrderDate: orderDate,
+                    OrderStatus: orderStatus,
+                    CustomerId: customerId,
+                    DishID: dishId
+                }),
+                success: function (data) {
+                    closeOrderForm();
+                    clearOrderModal();
+                    loadOrderList();
+                },
+                error: function (error) {
+                    alert("Error: " + error.responseText);
+                    console.log(error);
+                }
+            });
+        } else {
+            // Edit existing order
+            $.ajax({
+                url: '/Orders/Update/' + editingOrderId,
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    OrderID: editingOrderId,
+                    OrderDate: orderDate,
+                    OrderStatus: orderStatus,
+                    CustomerId: customerId,
+                    DishID: dishId
+                }),
+                success: function (data) {
+                    closeOrderForm();
+                    clearOrderModal();
+                    loadOrderList();
+                },
+                error: function (error) {
+                    alert("Error: " + error.responseText);
+                    console.log(error);
+                }
+            });
+        }
+    }
+
+    function clearOrderModal() {
+        editingOrderId = 0;
+        $('#orderId').val('');
+        $('#orderDate').val('');
+        $('#orderStatus').val('');
+        $('#customerId').val('');
+        $('#dishId').val('');
+    }
+
+    function editOrder(orderId, orderDate, orderStatus, customerId, dishId) {
+        const modal = document.getElementById("orderModal");
+        modal.style.display = "block";
+        editingOrderId = orderId;
+        $('#orderId').val(orderId);
+        $('#orderDate').val(orderDate);
+        $('#orderStatus').val(orderStatus);
+        $('#customerId').val(customerId);
+        $('#dishId').val(dishId);
+    }
+
+    function deleteOrder(orderId) {
+        $.ajax({
+            url: '/Orders/Delete/' + orderId,
+            type: 'DELETE',
+            success: function (data) {
+                loadOrderList();
+            },
+            error: function (error) {
+                alert("Error: " + error.responseText);
+                console.log(error);
+            }
+        });
+    }
+
+    function loadOrderList() {
+        $.ajax({
+            url: "/Orders/GetOrders",
+            method: "GET",
+            success: function (orders) {
+                displayOrderList(orders);
+            },
+            error: function (error) {
+                console.error("Error loading order list: " + error.responseText);
+            }
+        });
+    }
+
+    function displayOrderList(orders) {
+        var orderTable =
+            $("<table class='table table-bordered dataTable' id='dataTable' width='100%' cellspacing='0' role='grid' aria-describedby='dataTable_info' style='width: 100%;'>").append(
+                $("<thead>").append(
+                    $("<tr role='row'>").append(
+                        $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("Order ID"),
+                        $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("Order Date"),
+                        $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("Order Status"),
+                        $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("Customer ID"),
+                        $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("Dish ID"),
+                        $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").append("<button class=\"btn btn-success\" data-toggle='modal' onclick='openOrderForm()' data-target='#orderModal'>Add Order</button>")
+                    )
+                ),
+                $("<tbody>").append(
+                    orders.map(function (order) {
+                        return $("<tr>").append(
+                            $("<td>").text(order.orderID),
+                            $("<td>").text(formatDate(order.orderDate)), // Assuming formatDate is a function to format date
+                            $("<td>").text(order.orderStatus),
+                            $("<td>").text(order.customerId),
+                            $("<td>").text(order.dishID),
+                            $("<td>").html(
+                                "<button class=\"btn btn-primary\" onclick='editOrder(\"" + order.orderID + "\", \"" + order.orderDate + "\", \"" + order.orderStatus + "\", \"" + order.customerId + "\", \"" + order.dishID + "\")'>Edit</button>"
+                            ),
+                            $("<td>").html("<button  class=\"btn btn-danger\" onclick='deleteOrder(\"" + order.orderID + "\")'>Delete</button>")
+                        );
+                    })
+                )
+            );
+
+        $("#order-list").empty().append(orderTable);
+    }
+
+    function formatDate(date) {
+        return new Date(date).toLocaleString();
+    }
+
+    $(document).ready(function () {
+        loadOrderList();
+    });
+</script>

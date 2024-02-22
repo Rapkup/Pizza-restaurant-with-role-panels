@@ -1,0 +1,63 @@
+﻿@model WEBKITTER.UI.Models.OrderModel
+
+
+@{
+    ViewData["Title"] = "Edit Order";
+    var errorMessage = TempData["errorMessage"]?.ToString();
+
+}
+
+<h3>@ViewData["Title"]</h3>
+<hr />
+
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error</strong>@errorMessage
+    </div>
+    <button type="button" class="btn-close float-end" data-bs-dismiss="alert"></button>
+}
+
+
+<form action="Edit" method="post" autocomplete="off">
+    <div class="mb-3">
+        <label class="form-label">Id</label>
+        <input type="text" class="form-control" asp-for="Id" readonly />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Order Date</label>
+        <input type="text" class="form-control" asp-for="OrderDate" />
+        <span asp-validation-for="OrderDate" class="text-danger"></span>
+
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Order Status</label>
+        <input type="text" class="form-control" asp-for="OrderStatus" />
+        <span asp-validation-for="OrderStatus" class="text-danger"></span>
+
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Customer ID</label>
+        <input type="text" class="form-control" asp-for="CustomerId" />
+        <span asp-validation-for="CustomerId" class="text-danger"></span>
+
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Dish ID</label>
+        <input type="text" class="form-control" asp-for="DishId" />
+        <span asp-validation-for="DishId" class="text-danger"></span>
+
+    </div>
+
+    <div class="d-grid">
+        <button type="submit" class="btn btn-success">Update</button>
+    </div>
+</form>
+
+@section Scripts
+    {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

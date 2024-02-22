@@ -1,0 +1,42 @@
+   @*  <header>
+        <nav class="navbar navbar-expand-md navbar-light">
+
+            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">WEBKITTER</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto py-4 py-md-0">
+                    <li class="nav-item pl-4 pl-md-0 ml-0 ml-md-4" style="margin-left:60px">
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Dishes" asp-action="Index">Dishes</a>
+
+                    </li>
+                    <li class="nav-item pl-4 pl-md-0 ml-0 ml-md-4" style="margin-left:60px">
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Customers" asp-action="Index">Customers</a>
+
+                    </li>   
+                    <li class="nav-item pl-4 pl-md-0 ml-0 ml-md-4" style="margin-left:60px">
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">Orders</a>
+
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+
+
+  
+
+
+    <script src="~/js/CustomJS.js"> </script>
+    <script src="~/js/site.js"> </script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false) *@
+
+
+

@@ -1,0 +1,222 @@
+﻿@{
+    ViewData["Title"] = "Контроль пользователей";
+}
+@Html.AntiForgeryToken()
+<div class="modal" id="userModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">User Details</h4>
+                <button type="button" data-dismiss="modal" onclick="closeForm()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label for="userName">User Name:</label>
+                    <input type="text" class="form-control" id="userName">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" class="form-control" id="email">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" class="form-control" id="password">
+                </div>
+                <div class="form-group">
+                    <label for="PasswordConfirm">Confirm password:</label>
+                    <input type="password" class="form-control" id="PasswordConfirm">
+                </div>
+                <div class="form-group">
+                    <label for="role">Role:</label>
+                    <select class="form-control" id="role">
+                        <option value="Client">Client</option>
+                        <option value="Administrator">Administrator</option>
+                        <option value="ClientManager">ClientManager</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="saveUser()">Save</button>
+                <button type="button" onclick="closeForm()" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div>
+    <br/>
+    <h2>User Table</h2>
+    <table id="userTable" class="text-center table table-bordered"></table>
+    <button data-toggle="modal" onclick="openForm()" data-target="#userModal">Add User</button>
+</div>
+
+<br />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    var editingUserId = 0;
+
+   
+
+    function saveUser() {
+        var userName = $('#userName').val();
+        var email = $('#email').val();
+        var password = $('#password').val();
+        var PasswordConfirm = $('#PasswordConfirm').val();
+        var role = $('#role').val();
+
+        // Добавление нового пользователя
+        if (editingUserId == 0) {
+            $.ajax({
+                url: '/User/Add',
+                type: 'POST',
+                headers: {
+                    RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() // AntiForgeryToken
+                },
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    id: '0',
+                    userName: userName,
+                    email: email,
+                    password: password,
+                    PasswordConfirm: PasswordConfirm,
+                    role: role
+                }),
+                success: function (data) {
+                    closeForm();
+                    clearModal();
+                    loadUserData();
+                },
+                error: function (error) {
+                    alert("Error: " + error.responseText);
+                    console.log(error);
+                }
+            });
+        } else {
+            // Редактирование пользователя
+            $.ajax({
+                url: '/User/Update/' + editingUserId,
+                type: 'PUT',
+                headers: {
+                    RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() // AntiForgeryToken
+                },
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    id: editingUserId,
+                    userName: userName,
+                    email: email,
+                    password: password,
+                    PasswordConfirm: PasswordConfirm,
+                    role: role
+                }),
+                success: function (data) {
+                    closeForm();
+                    clearModal();
+                    loadUserData();
+                },
+                error: function (error) {
+                    alert("Error: " + error.responseText);
+                    console.log(error);
+                }
+            });
+        }
+    }
+     function clearModal() {
+        editingUserId = 0;
+        $('#userId').val('');
+        $('#userName').val('');
+        $('#email').val('');
+        $('#password').val('');
+        $('#PasswordConfirm').val('');
+        $('#role').val('');
+    }
+
+    function editUser(userId, userName, email, role) {
+        const modal = document.getElementById("userModal");
+        modal.style.display = "block";
+        editingUserId = userId;
+        $('#userId').val(userId);
+        $('#userName').val(userName);
+        $('#email').val(email);
+        $('#password').val(password);
+        $('#PasswordConfirm').val(PasswordConfirm);
+        $('#role').val(role);
+    }
+
+
+    function deleteUser(userId) {
+        $.ajax({
+            url: '/User/Delete/' + userId,
+            type: 'DELETE',
+            headers: {
+                RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() // AntiForgeryToken
+            },
+            success: function (data) {
+                loadUserData();
+            },
+            error: function (error) {
+                alert("Error: " + error.responseText);
+                console.log(error);
+            }
+        });
+    }
+
+    function loadUserData() {
+        $.ajax({
+            url: '/User/GetUsers',
+            type: 'GET',
+            headers: {
+                RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() // AntiForgeryToken
+            },
+            dataType: 'json',
+            success: function (data) {
+                $('#userTable').empty();
+                $('#userTable').append('<thead><tr><th>ID</th><th>User Name</th><th>Email</th><th>Role</th><th>Edit</th><th>Delete</th></tr></thead><tbody>');
+                data.forEach(function (user) {
+                    var row = 
+                    '<tr>
+                        <td>' + user.id + '</td>
+                        <td>' + user.userName + '</td>
+                        <td>' + user.email + '</td>
+                        <td>' + user.role + '</td>'+
+                            '<td>
+                                <button onclick="editUser(
+                                        \'' + user.id + '\',
+                                        \'' + user.userName + '\',
+                                        \'' + user.email + '\', 
+                                        \'' + user.role + '\')">Edit
+                                </button>
+                            </td>' +
+                            '<td>
+                                <button onclick="deleteUser(\'' + user.id + '\')">Delete
+                                </button>
+                            </td>
+                    </tr>';
+                    $('#userTable').append(row);
+                });
+                $('#userTable').append('</tbody>');
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });
+    }
+
+
+    function openForm()
+    {
+        const modal = document.getElementById("userModal");
+        modal.style.display = "block";
+    }
+
+    function closeForm()
+    {
+        const modal = document.getElementById("userModal");
+        modal.style.display = "none";
+    }
+
+    $(document).ready(function () {
+        loadUserData();
+        closeForm();
+    });
+</script>

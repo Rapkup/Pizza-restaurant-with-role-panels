@@ -1,0 +1,228 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutPanel.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Dishes List</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <div id="dataTable_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                <div class="row">
+                    <div class="col-sm-12 col-md-6">
+                        <div id="dataTable_filter" class="dataTables_filter">
+                            <label>
+                                Search:
+                                <input type="search" class="form-control form-control-sm" placeholder="" aria-controls="dataTable">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                    </div>
+                </div>
+                <div class="row" id="client-list">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="userModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Dishes Details</h4>
+                <button type="button" data-dismiss="modal" onclick="closeForm()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="dishID">
+                <div class="form-group">
+                    <label for="dishName">Dish Name:</label>
+                    <input type="text" class="form-control" id="dishName">
+                </div>
+                <div class="form-group">
+                    <label for="description">Dish Name:</label>
+                    <input type="text" class="form-control" id="description">
+                </div>
+
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" onclick="saveUser()">Save</button>
+                    <button type="button" onclick="closeForm()" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function openForm() {
+        const modal = document.getElementById("userModal");
+        modal.style.display = "block";
+    }
+
+    function closeForm() {
+        const modal = document.getElementById("userModal");
+        modal.style.display = "none";
+
+        // Remove modal backdrop
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+    }
+
+
+    var editingUserId = 0;
+
+
+    function saveUser() {
+        var dishName = $('#dishName').val();
+        var description = $('#description').val();
+
+
+        // Добавление нового пользователя
+        if (editingUserId == 0) {
+            $.ajax({
+                url: 'Dishes/Add',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    DishID: '0',
+                    DishName: dishName,
+                    Description: description
+                }),
+                success: function (data) {
+                    closeForm();
+                    clearModal();
+                    loadClientList();  // Corrected function name
+                },
+                error: function (error) {
+                    alert("Error: " + error.responseText);
+                    console.log(error);
+                }
+            });
+        } else {
+            // Редактирование пользователя
+            $.ajax({
+                url: '/Dishes/Update/' + editingUserId,
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    DishID: editingUserId,
+                    DishName: dishName,
+                    Description: description
+                }),
+                success: function (data) {
+                    closeForm();
+                    clearModal();
+                    loadClientList();  // Corrected function name
+                },
+                error: function (error) {
+                    alert("Error: " + error.responseText);
+                    console.log(error);
+                }
+            });
+        }
+    }
+
+
+
+    function clearModal() {
+        editingUserId = 0;
+        $('#dishID').val('');
+        $('#dishName').val('');
+        $('#description').val('');
+
+    }
+
+    function editUser(dishID, dishName, description) {
+        const modal = document.getElementById("userModal");
+        modal.style.display = "block";
+        editingUserId = dishID;
+        $('#dishID').val(dishID);
+        $('#dishName').val(dishName);
+        $('#description').val(description);
+    }
+
+
+    function deleteUser(dishID) {
+        $.ajax({
+            url: '/Dishes/Delete/' + dishID,
+            type: 'DELETE',
+            success: function (data) {
+                loadClientList();
+            },
+            error: function (error) {
+                alert("Error: " + error.responseText);
+                console.log(error);
+            }
+        });
+    }
+
+
+    function loadClientList() {
+        $.ajax({
+            url: "/Dishes/GetDishes",
+            method: "GET",
+            success: function (clients) {
+                console.log(clients);  // Log the received data to the console
+                displayClientList(clients);
+
+            },
+            error: function (error) {
+                console.error("Error loading client list: " + error.responseText);
+            }
+        });
+    }
+
+    function displayClientList(clients) {
+        var clientTable =
+
+            $("<table class='table table-bordered dataTable' id='dataTable' width='100%' cellspacing='0' role='grid' aria-describedby='dataTable_info' style='width: 100%;'>").append(
+                $("<thead>").append(
+                    $("<tr role='row'>").append(
+                        $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("Dish Name"),
+                        $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>").text("Description"),
+                        $("<th class='sorting sorting_desc' tabindex='0' aria-controls='dataTable' rowspan='1' colspan='1'>")
+                            .append("<button class=\"btn btn-success\" data-toggle='modal' onclick='openForm()' data-target='#userModal'>Add User</button>")
+
+                    )
+                )
+                ,
+                $("<tbody>").append(
+                    clients.map(function (client) {
+                        return $("<tr>").append(
+                            $("<td>").text(client.dishName),
+                            $("<td>").text(client.description),
+                            $("<td>").html(
+                                "<button class=\"btn btn-primary\" onclick='editUser(\"" + client.dishID + "\", \"" + client.dishName + "\", \"" + client.description + "\")'>Edit</button>"
+                            ),
+                            $("<td>").html("<button  class=\"btn btn-danger\" onclick='deleteUser(\"" + client.dishID + "\")'>Delete</button>")
+
+                        );
+                    })
+                )
+
+            );
+
+
+
+
+        $("#client-list").empty().append(clientTable);
+    }
+
+    $(document).ready(function () {
+        loadClientList();
+
+    });
+</script>
